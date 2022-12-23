@@ -20,9 +20,13 @@ How to solve via reverse engineering:
   1. First, throw the hint ("You may find some decoders online") out the window, it's completely useless.
   2. Second, recognize and understand the python line as python, and learn what the "join", "ord" and "chr" functions do, as well as how "for loops" work and what the << operator does. 
   3. You'll also need to understand that the python line given ENCODES the texts into the funky chinese characters. This is where the reverse engineering comes into play. You'll need to understand how the code works so that you can write a script that reverses what it does (IOW, decodes what the given python encodes). Here's how to get there, looking at the python code:
+ 
     a. Assuming "flag" in the code is "picoCTF{...}", we can start pluggin in those letters into the python line 
+    
     b. If we are following convention, flag[0] should be 'p' and flag[1] should be 'i'. Therefore, the following code should give us the first line of our "mandarin" (灩): chr((ord('p') << 8) + ord('i')). Oh good, it does. We can continue on trying to reverse the given python algo.
+    
     c. It is important to understand what's happening in terms of binary before we can reverse engineer this with confidence. let's look at it again with ord('p') and ord('i'). if you type print(ord('p')) in python you'll get 112. 112 base10 is 01110000 in binary. Shifting this left by 8 bits (<<8 in python) gives us 01110000 00000000. now let's add ord('i'), which is 01101001, to get 01110000 01101001. if we were to chr() that, we'd get our first mandarin character. In essence, eflag[0] is a 16-bit amalgum of the 8-bit flag[0] for bits 16 thru 9 and 8-bit flag[1] for bits 8 thru 1.
+    
     d. The important thing needed to reverse engineer this, is noticing that the information for flag[0] is still available to us even after adding flag[1], so long as we stay in binary and reverse that bit-shifting we did. For example, (01110000 01101001 >> 8) = (01110000 11111111 >> 8) = (01110000 00000000 >> 8) = 01110000 = 112 base10 = 'p' after you do chr(112). Therefore, to get flag[0], all we have to do is bit-shift the first mandarin character right by 8 like this: chr(ord(eflag[0]) >> 8). this gives us "p".
   4. Again, our encoding algorithm is 灩 = (p << 8) + i, and since we now have p, we can go backwards to get i by rearranging that equation thusly: i = 灩 - (p << 8). 灩 is chr(ord(eflag[0])). p is chr(ord(eflag[0]) >> 8). Therefore i = chr(ord(eflag[0]) - ((ord(eflag[0]) >> 8) << 8)).
   5. Now we can write a basic script in python to loop this over the entire string and print it out:
